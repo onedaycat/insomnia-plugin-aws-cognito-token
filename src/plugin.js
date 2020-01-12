@@ -11,18 +11,18 @@ const session = ({ Username, Password, UserPoolId, ClientId, TokenType }) => new
       ClientId,
     })
   }).authenticateUser(new AWSCognito.AuthenticationDetails({
-    Username,
-    Password
-  }),
-  {
-    onSuccess: result => {
-      TokenType === 'id' ? resolve(result.idToken.jwtToken): resolve(result.accessToken.jwtToken);
-    },
-    onFailure: error => {
-      console.log(error);
-      reject(error);
-    }
-  });
+        Username,
+        Password
+      }),
+      {
+        onSuccess: result => {
+          TokenType === 'id' ? resolve(result.idToken.jwtToken): resolve(result.accessToken.jwtToken);
+        },
+        onFailure: error => {
+          console.log(error);
+          reject(error);
+        }
+      });
 });
 
 // Validate if the token has expired
@@ -67,7 +67,7 @@ const errorToken = error => {
 }
 
 // Main run function
-const run = async (context, Username, Password, UserPoolId, ClientId, TokenType) => {
+const run = async (context, Username, Password, UserPoolId, ClientId, TokenType, Key) => {
   if (!Username) {
     throw new Error('Username attribute is required')
   }
@@ -80,13 +80,17 @@ const run = async (context, Username, Password, UserPoolId, ClientId, TokenType)
   if (!ClientId) {
     throw new Error('ClientId attribute is required')
   }
+  if (!Key) {
+    throw new Error('Key attribute is required')
+  }
   if (!TokenType) {
     TokenType = 'access'
   }
 
-  const key = [ Username, Password, UserPoolId, ClientId, TokenType ].join('::')
-  const token = await context.store.getItem(key)
-  if (token && validToken(token)) {
+  const storeToken = [ Username, Password, UserPoolId, ClientId, TokenType ].join('::')
+  const storeKey = await context.store.getItem('_cogkey') || Key
+  const token = await context.store.getItem(storeToken)
+  if (token != null && validToken(token) && Key == storeKey) {
     if (jwtDecode(token).error){
       // Display error
       return jwtDecode(token).error
@@ -97,21 +101,23 @@ const run = async (context, Username, Password, UserPoolId, ClientId, TokenType)
     // Compute a new token
     try {
       const token = await session({ Username, Password, UserPoolId, ClientId, TokenType })
-      await context.store.setItem(key, token)
+      await context.store.setItem(storeToken, token)
+      await context.store.setItem('_cogkey', Key)
       return token
     }
     catch(error){
       // To keep thing simle we create a fake JWT token with error message
       const token = errorToken(error.message)
-      await context.store.setItem(key, token)
+      await context.store.setItem(storeToken, token)
+      await context.store.setItem('_cogkey', Key)
       return error.message
     }
   }
 }
 
 module.exports.templateTags = [{
-  name: 'AwsCognitoToken',
-  displayName: 'AWS Cognito Token',
+  name: 'AwsCognito',
+  displayName: 'AWS Cognito',
   description: 'Plugin for Insomnia to provide Cognito JWT token from AWS',
   args: [
     {
@@ -148,6 +154,12 @@ module.exports.templateTags = [{
           value: "id"
         }
       ]
+    },
+    {
+      displayName: 'Key',
+      type: 'string',
+      defaultValue: '1',
+      validate: arg => (arg ? '' : 'Required')
     },
   ],
   run

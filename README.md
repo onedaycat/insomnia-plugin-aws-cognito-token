@@ -4,7 +4,7 @@ Insomnia plugin for AWS Cognito allowing you to fetch the JWT Token automaticall
 Note: version 0.10.0 changed the Tags order, you may have to reorder your Tags value.
 
 ## NPM
-[https://www.npmjs.com/package/insomnia-plugin-aws-cognito-token](https://www.npmjs.com/package/insomnia-plugin-aws-cognito-token)
+[https://www.npmjs.com/package/insomnia-plugin-aws-cognito](https://www.npmjs.com/package/insomnia-plugin-aws-cognito)
 
 ## Insomnia
 [Insomnia](https://support.insomnia.rest/) is a free cross-platform desktop application that takes the pain out of interacting with HTTP-based APIs. 
